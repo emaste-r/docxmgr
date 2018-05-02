@@ -1,4 +1,5 @@
 # coding=utf-8
+import json
 import os
 
 from flask import Flask, render_template, request, jsonify, send_from_directory
@@ -18,6 +19,57 @@ def hello_world():
 @app.route("/index")
 def index():
     return render_template('index.html')
+
+
+@app.route("/doc/resign", methods=["POST"])
+def resign():
+    data_str = request.form.get("data", {})
+    data_json = json.loads(data_str)
+
+    from docxtpl import DocxTemplate
+    tpl = DocxTemplate('resign_tpl.docx')
+
+    context = data_json
+
+    # 构造第一段
+    first_a = ""
+    for item in data_json['items']:
+        item = data_json["items"][0]
+        sex_he = 'he' if item['sex'] == 1 else 'she'
+        sex_his = 'his' if item['sex'] == 1 else 'her'
+        sex_Mr = 'Mr. %s' % item['lastname'] if item['sex'] == 1 else 'Miss. %s' % item['lastname']
+        sex_Mr_long = 'Mr. %s %s' % (item['lastname'], item['firstname']) if item['sex'] == 1 else 'Miss. %s%s' % (
+            item['lastname'], item['firstname'])
+        first_a += "a resignation letter from %s (“%s”), informing the Board of %s resignation from the position" \
+                  " as the %s of the Company due to %s choice made for %s" % \
+                  (sex_Mr_long, sex_Mr, sex_his, item['position'], sex_his, item['reason'])
+        first_a += ', and '
+    first_a = first_a[0:-6]
+
+    first_b = "takes effect immediately" if data_json['effect_time'] == 1 else \
+        "he resignation will take effect upon the election of the new %s of the Company." % data_json['resign_type']
+
+    # 构造第二段
+    if len(data_json['items']) == 1:
+        item = data_json["items"][0]
+        sex_he = 'he' if item['sex'] == 1 else 'sje'
+        sex_Mr = 'Mr.' + item['lastname'] if item['sex'] == 1 else 'Miss.' + item['lastname']
+        second_a = "%s has confirmed that %s has " % (sex_Mr, sex_he)
+    else:
+        tmp_str = ""
+        for item in data_json['items']:
+            sex_Mr = 'Mr.' + item['lastname'] if item['sex'] == 1 else 'Miss.' + item['lastname']
+            tmp_str += "%s and " % sex_Mr
+        tmp_str = tmp_str[0:-4]
+        second_a = "each of %s has confirmed that they " % (tmp_str)
+
+    context['in_europe'] = True
+    context['is_paid'] = False
+
+    tpl.render(context)
+    tpl.save('upload/resign.docx')
+
+    return jsonify({"msg": "ok", "code": 0, "url": "<a href='%s'>resign.docx </a>" % "/download/resign.docx"})
 
 
 @app.route("/order", methods=["POST"])
