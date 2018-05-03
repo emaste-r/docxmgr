@@ -103,3 +103,4 @@ ENV/
 static/
 tests/
 upload/
+!/static/

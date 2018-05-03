@@ -19,7 +19,7 @@ def hello_world():
 
 @app.route("/index")
 def index():
-    return render_template('index.html')
+    return render_template('index/index.html')
 
 
 @app.route("/doc/resign", methods=["POST"])
@@ -30,7 +30,11 @@ def resign():
     from docxtpl import DocxTemplate
     tpl = DocxTemplate('resign_tpl.docx')
 
+    effect_time = data_json['items'][0]['effect_time']
+    date = data_json['items'][0]['date']
+
     context = data_json
+
 
     # 构造标题
     title = data_json['items'][0]['job'] if len(data_json['items']) == 1 else "Directors"
@@ -50,7 +54,7 @@ def resign():
         first_a += ', and '
     first_a = first_a[0:-6]
 
-    first_b = "The resignation takes effect immediately" if data_json['effect_time'] == 1 else \
+    first_b = "The resignation takes effect immediately" if effect_time == 1 else \
         "he resignation will take effect upon the election of the new %s of the Company." % data_json['items'][0]['job']
 
     # 构造第二段
@@ -77,6 +81,7 @@ def resign():
     context['in_europe'] = True
     context['is_paid'] = False
     context['title'] = title
+    context['date'] = date
     context['first_a'] = first_a
     context['first_b'] = first_b
     context['second_a'] = second_a
@@ -87,7 +92,7 @@ def resign():
     tpl.render(context)
     tpl.save('upload/resign.docx')
 
-    return jsonify({"msg": "ok", "code": 0, "url": "<a href='%s'>resign.docx </a>" % "/download/resign.docx"})
+    return jsonify({"msg": "ok", "code": 0, "url": "/download/resign.docx"})
 
 
 @app.route("/order", methods=["POST"])
