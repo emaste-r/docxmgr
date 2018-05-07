@@ -1,9 +1,10 @@
 # coding=utf-8
 import json
-import logging
 import os
 
 from flask import Flask, render_template, request, jsonify, send_from_directory
+
+from common.constant import EFFECT_TIME_NOW
 
 app = Flask(__name__)
 UPLOAD_FOLDER = 'upload'
@@ -13,49 +14,55 @@ ALLOWED_EXTENSIONS = set(['txt', 'png', 'jpg', 'xls', 'JPG', 'PNG', 'xlsx', 'gif
 
 
 @app.route('/')
-def hello_world():
-    return 'Hello World!'
-
-
-@app.route("/index")
 def index():
     return render_template('index/index.html')
 
 
 @app.route("/doc/resign", methods=["POST"])
 def resign():
-    data_json = json.loads(request.data)
-    print data_json
+    data_json = json.loads(request.form.to_dict().keys()[0])
 
     from docxtpl import DocxTemplate
     tpl = DocxTemplate('resign_tpl.docx')
 
+    # 一些公共的参数
     effect_time = data_json['items'][0]['effect_time']
     date = data_json['items'][0]['date']
-
-    context = data_json
-
+    company = data_json['items'][0]['company']
+    notice_type_dic = {
+        1: u'董事辞任',
+        2: u'监事辞任',
+        3: u'委任董事',
+        4: u'委任监事',
+        5: u'委任职工董事',
+        6: u'委任职工监事',
+        7: u'变更董事',
+        8: u'变更监事',
+    }
+    single_person_flag = True if len(data_json['items']) == 1 else False
 
     # 构造标题
-    title = data_json['items'][0]['job'] if len(data_json['items']) == 1 else "Directors"
+    title = data_json['items'][0]['job'] if single_person_flag else "Directors"
 
     # 构造第一段
     first_a = ""
     for item in data_json['items']:
-        item = data_json["items"][0]
         sex_he = 'he' if item['sex'] == 1 else 'she'
         sex_his = 'his' if item['sex'] == 1 else 'her'
         sex_Mr = 'Mr. %s' % item['lastname'] if item['sex'] == 1 else 'Miss. %s' % item['lastname']
         sex_Mr_long = 'Mr. %s %s' % (item['lastname'], item['firstname']) if item['sex'] == 1 else 'Miss. %s%s' % (
             item['lastname'], item['firstname'])
         first_a += u"a resignation letter from %s (“%s”), informing the Board of %s resignation from the position" \
-                  u" as the %s of the Company due to %s " % \
-                  (sex_Mr_long, sex_Mr, sex_his, item['position'], item['reason'])
+                   u" as the %s of the Company due to %s " % \
+                   (sex_Mr_long, sex_Mr, sex_his, item['position'], item['reason'])
         first_a += ', and '
     first_a = first_a[0:-6]
 
-    first_b = "The resignation takes effect immediately" if effect_time == 1 else \
-        "he resignation will take effect upon the election of the new %s of the Company." % data_json['items'][0]['job']
+    if effect_time == EFFECT_TIME_NOW:
+        first_b = "The resignation takes effect immediately"
+    else:
+        _t = u'、'.join([job_dic[v["job"]] for v in data_json["items"]])
+        first_b = u"The resignation will take effect upon the election of the new %s of the Company." % _t
 
     # 构造第二段
     if len(data_json['items']) == 1:
@@ -65,23 +72,25 @@ def resign():
         sex_Mr = 'Mr.' + item['lastname'] if item['sex'] == 1 else 'Miss.' + item['lastname']
         second_a = "%s " % (sex_Mr)
         second_b = "%s has" % (sex_his)
-        third_a = "%s for %s" %(sex_Mr, sex_his)
-        third_b = "%s" %(sex_his)
+        third_a = "%s for %s" % (sex_Mr, sex_his)
+        third_b = "%s" % (sex_his)
     else:
         tmp_str = ""
         for item in data_json['items']:
             sex_Mr = 'Mr.' + item['lastname'] if item['sex'] == 1 else 'Miss.' + item['lastname']
             tmp_str += "%s and " % sex_Mr
         tmp_str = tmp_str[0:-4]
-        second_a = "each of %s " % (tmp_str)
+        second_a = "Each of %s " % (tmp_str)
         second_b = "they have"
         third_a = "their"
         third_b = "their"
 
+    context = data_json
     context['in_europe'] = True
     context['is_paid'] = False
     context['title'] = title
     context['date'] = date
+    context['company'] = company
     context['first_a'] = first_a
     context['first_b'] = first_b
     context['second_a'] = second_a
