@@ -31,6 +31,9 @@ class ResignDirectorHandler(MethodView):
         # 一些公共的参数
         effect_time = data_json['items'][0]['effect_time']
         date = data_json['items'][0]['date']
+        time_format = datetime.datetime.strptime(date, '%Y-%m-%d')
+        date = time_format.strftime('%d %B %Y')
+
         company = data_json['items'][0]['company']
         notice_type_dic = {
             1: u'董事辞任',
@@ -82,7 +85,7 @@ class ResignDirectorHandler(MethodView):
             sex_his = 'his' if item['sex'] == 1 else 'her'
             sex_Mr = 'Mr.' + item['lastname'] if item['sex'] == 1 else 'Ms.' + item['lastname']
             second_a = "%s " % (sex_Mr)
-            second_b = "%s has" % (sex_his)
+            second_b = "%s has" % (sex_he)
             third_a = "%s for %s" % (sex_Mr, sex_his)
             third_b = "%s" % (sex_his)
         else:
