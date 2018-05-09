@@ -4,6 +4,7 @@
 2018年05月07日 星期一
 对应董事辞任...
 """
+import datetime
 import json
 import os
 
@@ -42,17 +43,17 @@ class ResignDirectorHandler(MethodView):
             8: u'变更监事',
         }
         job_dic = {
-            1: "non-executive director",
-            2: "supervisory committee",
-            3: "supervisory committee",
-            4: "supervisory committee",
-            5: "supervisory committee",
-            6: "supervisory committee",
+            1: "Non-Executive Director",
+            2: "Supervisory Committee",
+            3: "Supervisory Committee",
+            4: "Supervisory Committee",
+            5: "Supervisory Committee",
+            6: "Supervisory Committee",
         }
         single_person_flag = True if len(data_json['items']) == 1 else False
 
         # 构造标题
-        title = data_json['items'][0]['job'] if single_person_flag else "Directors"
+        title = job_dic[data_json['items'][0]['job']] if single_person_flag else "Directors"
 
         # 构造第一段
         first_a = ""
@@ -113,6 +114,10 @@ class ResignDirectorHandler(MethodView):
         if not os.path.exists(DOC_DIR):
             os.mkdir(DOC_DIR)
 
-        tpl.save('%s/resign_director.docx' % DOC_DIR)
+        # 保存文件
+        now = datetime.datetime.now().strftime("%Y%m%d:%H%M%S")
+        new_filename = 'resign_director%s.docx' % now
+        new_filepath = '%s/resign_director%s.docx' % (DOC_DIR, now)
+        tpl.save(new_filepath)
 
-        return jsonify({"msg": "ok", "code": 0, "url": "/download/resign.docx"})
+        return jsonify({"msg": "ok", "code": 0, "url": "/download/%s" % new_filename})

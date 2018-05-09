@@ -14,7 +14,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 ALLOWED_EXTENSIONS = set(['txt', 'png', 'jpg', 'xls', 'JPG', 'PNG', 'xlsx', 'gif', 'GIF', "docx"])
 
 app.add_url_rule('/', view_func=IndexHandler.as_view("index"))
-app.add_url_rule('/resign/director', view_func=ResignDirectorHandler.as_view("resign_director"))
+app.add_url_rule('/doc/resign', view_func=ResignDirectorHandler.as_view("resign_director"))
 app.add_url_rule('/download/<filename>', view_func=DownloadHandler.as_view("download"))
 
 if __name__ == '__main__':
